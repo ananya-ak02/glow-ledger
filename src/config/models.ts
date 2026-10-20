@@ -24,14 +24,21 @@ export interface TaskRouting {
 
 export const GEMINI_FLASH: ModelConfig = {
   provider: 'gemini',
-  modelId: 'gemini-2.0-flash',
+  modelId: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+  maxTokens: 2048,
+  temperature: 0.3,
+};
+
+export const GEMINI_FLASH_BACKUP: ModelConfig = {
+  provider: 'gemini',
+  modelId: 'gemini-3.5-flash-lite',
   maxTokens: 2048,
   temperature: 0.3,
 };
 
 export const GEMINI_FLASH_LITE: ModelConfig = {
   provider: 'gemini',
-  modelId: 'gemini-2.0-flash-lite',
+  modelId: process.env.GEMINI_LITE_MODEL || 'gemini-3.5-flash-lite',
   maxTokens: 1024,
   temperature: 0.2,
 };
@@ -50,7 +57,7 @@ export const MODEL_ROUTING: Record<string, TaskRouting> = {
     task: 'ingredient_extraction',
     description: 'Extract and classify ingredients from product text',
     primary: GROQ_LLAMA,
-    fallbacks: [GEMINI_FLASH_LITE],
+    fallbacks: [GEMINI_FLASH_LITE, GEMINI_FLASH],
     maxRetries: 3,
     tokenBudget: 2000,
   },
@@ -58,7 +65,7 @@ export const MODEL_ROUTING: Record<string, TaskRouting> = {
     task: 'classification',
     description: 'Classify product category and type',
     primary: GROQ_LLAMA,
-    fallbacks: [GEMINI_FLASH_LITE],
+    fallbacks: [GEMINI_FLASH_LITE, GEMINI_FLASH],
     maxRetries: 3,
     tokenBudget: 1500,
   },
@@ -66,7 +73,7 @@ export const MODEL_ROUTING: Record<string, TaskRouting> = {
     task: 'routine_analysis',
     description: 'Analyze skincare routine for issues and improvements',
     primary: GEMINI_FLASH,
-    fallbacks: [GROQ_LLAMA],
+    fallbacks: [GEMINI_FLASH_BACKUP, GROQ_LLAMA],
     maxRetries: 2,
     tokenBudget: 4000,
   },
@@ -74,7 +81,7 @@ export const MODEL_ROUTING: Record<string, TaskRouting> = {
     task: 'product_synthesis',
     description: 'Synthesize research data into product verdict',
     primary: GEMINI_FLASH,
-    fallbacks: [GROQ_LLAMA],
+    fallbacks: [GEMINI_FLASH_BACKUP, GROQ_LLAMA],
     maxRetries: 2,
     tokenBudget: 6000,
   },
@@ -82,7 +89,7 @@ export const MODEL_ROUTING: Record<string, TaskRouting> = {
     task: 'personalization',
     description: 'Personalize shared report for specific user profile',
     primary: GEMINI_FLASH_LITE,
-    fallbacks: [GROQ_LLAMA],
+    fallbacks: [GEMINI_FLASH, GROQ_LLAMA],
     maxRetries: 2,
     tokenBudget: 3000,
   },

@@ -32,30 +32,44 @@ export const RoutineAnalysisSchema = z.object({
     z.object({
       step: z.string(),
       issue: z.string(),
-      severity: z.enum(['minor', 'moderate', 'major']),
+      severity: z.enum(['minor', 'moderate', 'major']).optional().default('minor'),
       suggestion: z.string(),
     })
   ),
   redundant: z.array(
     z.object({
-      steps: z.array(z.string()),
+      steps: z.array(z.string()).optional(),
+      step: z.string().optional(),
       reason: z.string(),
-      keep: z.string(),
-    })
+      keep: z.string().optional(),
+    }).transform((item) => ({
+      steps: item.steps && item.steps.length > 0 ? item.steps : item.step ? [item.step] : [],
+      reason: item.reason,
+      keep: item.keep || 'Either product',
+    }))
   ),
   missing: z.array(
     z.object({
-      category: z.string(),
+      category: z.string().optional(),
+      step: z.string().optional(),
       reason: z.string(),
-      suggested_ingredients: z.array(z.string()),
-      priority: z.enum(['essential', 'recommended', 'optional']),
-    })
+      suggested_ingredients: z.array(z.string()).optional(),
+      priority: z.enum(['essential', 'recommended', 'optional']).optional(),
+    }).transform((item) => ({
+      category: item.category || item.step || 'Targeted Step',
+      reason: item.reason,
+      suggested_ingredients: item.suggested_ingredients || [],
+      priority: item.priority || ('recommended' as const),
+    }))
   ),
   layering_order: z.array(
     z.object({
-      step: z.number(),
+      step: z.number().optional().default(1),
       product: z.string(),
-      category: z.string(),
+      category: z.string().optional().default('Step'),
+      time_of_day: z.enum(['am', 'pm']).optional(),
+      wait_time: z.string().optional(),
+      note: z.string().optional(),
     })
   ),
   conflicts: z.array(

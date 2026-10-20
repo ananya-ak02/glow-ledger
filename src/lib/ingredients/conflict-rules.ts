@@ -356,9 +356,23 @@ export function suggestLayeringOrder(
   products: { name: string; category: string }[]
 ): { name: string; category: string; suggestedOrder: number }[] {
   return products
-    .map((p) => ({
-      ...p,
-      suggestedOrder: LAYERING_ORDER[p.category.toLowerCase()] ?? 99,
-    }))
+    .map((p) => {
+      const cat = p.category.toLowerCase().trim();
+      let order = LAYERING_ORDER[cat];
+
+      if (order === undefined) {
+        for (const [key, val] of Object.entries(LAYERING_ORDER)) {
+          if (cat.includes(key) || key.includes(cat)) {
+            order = val;
+            break;
+          }
+        }
+      }
+
+      return {
+        ...p,
+        suggestedOrder: order ?? 99,
+      };
+    })
     .sort((a, b) => a.suggestedOrder - b.suggestedOrder);
 }

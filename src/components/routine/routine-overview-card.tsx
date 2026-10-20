@@ -40,6 +40,16 @@ export function RoutineOverviewCard({
         <p className="mt-2 text-sm text-charcoal-light leading-relaxed bg-cream/40 p-4 rounded-xl border border-border">
           {assessment}
         </p>
+        {metadata?.isMock && (
+          <div className="mt-2.5 rounded-lg border border-sage/40 bg-[var(--color-verdict-good-bg)]/60 px-3.5 py-2 text-[11px] text-charcoal flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5">
+              <span>⚡</span>
+              <span>
+                Powered by the <strong>Zero-Cost Deterministic Rules Engine</strong> (Offline Mode). Add a free Gemini or Groq API key in <code className="bg-white/80 px-1 py-0.5 rounded border border-border">.env.local</code> to activate live LLM generative personalization!
+              </span>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* What's Working */}

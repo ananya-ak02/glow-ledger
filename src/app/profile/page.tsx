@@ -17,7 +17,9 @@ export default function ProfilePage() {
   useEffect(() => {
     // Check local storage draft or session
     try {
-      const saved = localStorage.getItem('glowledger_onboarding_draft_v1');
+      const saved =
+        localStorage.getItem('glowledger_user_profile') ||
+        localStorage.getItem('glowledger_onboarding_draft_v1');
       if (saved) {
         setProfileData(JSON.parse(saved));
       } else {
@@ -52,6 +54,7 @@ export default function ProfilePage() {
 
   function handleDeleteData() {
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('glowledger_user_profile');
       localStorage.removeItem('glowledger_onboarding_draft_v1');
       localStorage.removeItem('glowledger_onboarding_completed');
       localStorage.removeItem('glowledger_demo_user');

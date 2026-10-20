@@ -50,9 +50,15 @@ export async function POST(request: Request) {
       state.past_reactions.flatMap((r) => r.suspected_ingredients)
     );
 
-    // Layering calculation
-    const layeringSuggestions = suggestLayeringOrder(
-      allProducts.map((p) => ({
+    // Layering calculation for AM and PM separately
+    const amLayeringSuggestions = suggestLayeringOrder(
+      state.am_routine.map((p) => ({
+        name: p.product_name,
+        category: p.category,
+      }))
+    );
+    const pmLayeringSuggestions = suggestLayeringOrder(
+      state.pm_routine.map((p) => ({
         name: p.product_name,
         category: p.category,
       }))
@@ -62,7 +68,10 @@ export async function POST(request: Request) {
     const { systemInstruction, userPrompt } = buildRoutineAnalysisPrompt(
       state,
       conflicts,
-      layeringSuggestions
+      {
+        am: amLayeringSuggestions,
+        pm: pmLayeringSuggestions,
+      }
     );
 
     // 3. Execute Single Synthesis LLM Call (Gemini 2.0 Flash -> Groq Llama 3.3 70B -> Deterministic Fallback)

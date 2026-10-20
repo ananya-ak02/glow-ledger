@@ -17,7 +17,9 @@ export function RoutineBuilderView() {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('glowledger_onboarding_draft_v1');
+      const saved =
+        localStorage.getItem('glowledger_user_profile') ||
+        localStorage.getItem('glowledger_onboarding_draft_v1');
       const wishlist = getLocalWishlist();
 
       const initialShortlist = wishlist.map((w) => ({
@@ -48,6 +50,7 @@ export function RoutineBuilderView() {
         am_routine: plan.amRoutine,
         pm_routine: plan.pmRoutine,
       };
+      localStorage.setItem('glowledger_user_profile', JSON.stringify(updatedProfile));
       localStorage.setItem('glowledger_onboarding_draft_v1', JSON.stringify(updatedProfile));
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);

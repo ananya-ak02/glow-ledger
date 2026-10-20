@@ -18,7 +18,9 @@ export function ResearchPageView() {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('glowledger_onboarding_draft_v1');
+      const saved =
+        localStorage.getItem('glowledger_user_profile') ||
+        localStorage.getItem('glowledger_onboarding_draft_v1');
       if (saved) {
         setProfileState(JSON.parse(saved));
       } else {

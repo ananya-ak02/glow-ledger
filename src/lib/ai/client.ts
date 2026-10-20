@@ -58,7 +58,9 @@ async function callGemini(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Gemini API error (${response.status}): ${errorText}`);
+    const err = new Error(`Gemini API error (${response.status}): ${errorText}`);
+    (err as unknown as { status: number }).status = response.status;
+    throw err;
   }
 
   const result = await response.json();
@@ -108,7 +110,9 @@ async function callGroq(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Groq API error (${response.status}): ${errorText}`);
+    const err = new Error(`Groq API error (${response.status}): ${errorText}`);
+    (err as unknown as { status: number }).status = response.status;
+    throw err;
   }
 
   const result = await response.json();
@@ -189,7 +193,17 @@ export async function callAI<T extends z.ZodTypeAny>({
           provider: config.provider,
           isMock: false,
         };
-      } catch (err) {
+      } catch (err: unknown) {
+        const errorObj = err as { status?: number; message?: string };
+        const msg = errorObj?.message || String(err);
+        console.warn(`[callAI] Attempt ${attempt} on ${config.modelId} failed:`, msg.substring(0, 200));
+
+        // If it's a 429 quota or rate limit, break immediately to try the next model in the fallback chain
+        if (errorObj?.status === 429 || msg.includes('429') || msg.includes('quota') || msg.includes('QuotaFailure')) {
+          console.warn(`[callAI] Model ${config.modelId} hit rate limit / quota. Moving to next fallback model immediately.`);
+          break;
+        }
+
         if (attempt < routing.maxRetries) {
           const delay = getBackoffDelay(attempt);
           await sleep(delay);

@@ -101,6 +101,23 @@ describe('Ingredient Conflict Engine (Deterministic)', () => {
     expect(sorted[4].category).toBe('sunscreen');
   });
 
+  it('correctly orders compound categories like Toner / Mist and Serum / Ampoule', () => {
+    const products = [
+      { name: 'Sunscreen Gel', category: 'Sunscreen' },
+      { name: 'Foaming Face Wash', category: 'Cleanser' },
+      { name: 'Centella Mist', category: 'Toner / Mist' },
+      { name: 'Hyaluronic Ampoule', category: 'Serum / Ampoule' },
+      { name: 'Ceramide Cream', category: 'Moisturizer' },
+    ];
+
+    const sorted = suggestLayeringOrder(products);
+    expect(sorted[0].name).toBe('Foaming Face Wash');
+    expect(sorted[1].name).toBe('Centella Mist');
+    expect(sorted[2].name).toBe('Hyaluronic Ampoule');
+    expect(sorted[3].name).toBe('Ceramide Cream');
+    expect(sorted[4].name).toBe('Sunscreen Gel');
+  });
+
   it('checks full routine for multi-product conflicts', () => {
     const routine = [
       { name: 'Cleanser', ingredients: ['Water', 'Glycerin'] },

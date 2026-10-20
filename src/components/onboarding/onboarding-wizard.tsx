@@ -31,12 +31,25 @@ export function OnboardingWizard() {
   const [saving, setSaving] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load draft from local storage if available
+  // Load draft from local storage if available, and support ?step=X in URL
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const saved =
+        localStorage.getItem('glowledger_user_profile') ||
+        localStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) {
         setState((prev) => ({ ...prev, ...JSON.parse(saved) }));
+      }
+
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const stepParam = params.get('step');
+        if (stepParam !== null) {
+          const stepIdx = parseInt(stepParam, 10);
+          if (!isNaN(stepIdx) && stepIdx >= 0 && stepIdx < STEPS.length) {
+            setCurrentStep(stepIdx);
+          }
+        }
       }
     } catch {
       // Ignore parse errors
@@ -50,6 +63,7 @@ export function OnboardingWizard() {
     if (isLoaded) {
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+        localStorage.setItem('glowledger_user_profile', JSON.stringify(state));
       } catch {
         // Storage quota issues or private mode
       }
@@ -90,8 +104,9 @@ export function OnboardingWizard() {
         // Fallback gracefully in dev/demo
       });
 
-      // Clear draft storage
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      // Save user profile permanently in localStorage so user's entered routine is NEVER erased
+      localStorage.setItem('glowledger_user_profile', JSON.stringify(state));
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
       // Mark onboarding completed in session
       localStorage.setItem('glowledger_onboarding_completed', 'true');
 

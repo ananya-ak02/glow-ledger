@@ -71,5 +71,15 @@ describe('Routine Analyzer Prompt & Deterministic Fallback', () => {
     );
     expect(missingBarrier).toBeDefined();
     expect(missingBarrier?.suggested_ingredients).toContain('Ceramides NP/AP/EOP');
+
+    // Layering order should cleanly separate AM and PM steps
+    const amSteps = parsed.layering_order.filter((s) => s.time_of_day === 'am');
+    const pmSteps = parsed.layering_order.filter((s) => s.time_of_day === 'pm');
+    expect(amSteps.length).toBe(2);
+    expect(pmSteps.length).toBe(2);
+    expect(amSteps[0].step).toBe(1);
+    expect(pmSteps[0].step).toBe(1);
+    expect(amSteps[0].note).toBeDefined();
+    expect(pmSteps[0].note).toBeDefined();
   });
 });
