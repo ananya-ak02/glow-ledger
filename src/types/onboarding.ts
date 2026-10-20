@@ -24,7 +24,9 @@ export interface PastReactionInput {
 }
 
 export interface OnboardingState {
-  // Step 1: Skin Type
+  // Step 1: Personal Profile & Skin Basics
+  name: string;
+  age_range: string;
   skin_type: SkinType | null;
   skin_type_notes: string;
 
@@ -45,7 +47,6 @@ export interface OnboardingState {
   past_reactions: PastReactionInput[];
 
   // Step 5: Context, Safety & Preferences
-  age_range: string;
   climate: string;
   budget: string;
   is_pregnant: boolean;
@@ -55,6 +56,8 @@ export interface OnboardingState {
 }
 
 export const INITIAL_ONBOARDING_STATE: OnboardingState = {
+  name: '',
+  age_range: '20-29',
   skin_type: null,
   skin_type_notes: '',
   concerns: [],
@@ -62,7 +65,6 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   pm_routine: [],
   worked_products: [],
   past_reactions: [],
-  age_range: '25-34',
   climate: 'temperate',
   budget: 'balanced',
   is_pregnant: false,

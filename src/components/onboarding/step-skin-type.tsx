@@ -2,15 +2,28 @@
 
 import type { SkinType } from '@/types/database';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 interface StepSkinTypeProps {
+  name: string;
+  ageRange: string;
   selectedType: SkinType | null;
   notes: string;
+  onChangeName: (name: string) => void;
+  onChangeAge: (age: string) => void;
   onChangeType: (type: SkinType) => void;
   onChangeNotes: (notes: string) => void;
 }
+
+const AGE_RANGES = [
+  { value: 'Under 20', label: 'Under 20 (Teen barrier care)' },
+  { value: '20-29', label: '20–29 (Peak collagen maintenance)' },
+  { value: '30-39', label: '30–39 (Cellular renewal & fine lines)' },
+  { value: '40-49', label: '40–49 (Elasticity & barrier support)' },
+  { value: '50+', label: '50+ (Deep lipid restoration & moisture)' },
+];
 
 const SKIN_TYPES: {
   id: SkinType;
@@ -57,8 +70,12 @@ const SKIN_TYPES: {
 ];
 
 export function StepSkinType({
+  name,
+  ageRange,
   selectedType,
   notes,
+  onChangeName,
+  onChangeAge,
   onChangeType,
   onChangeNotes,
 }: StepSkinTypeProps) {
@@ -66,73 +83,138 @@ export function StepSkinType({
     <div className="space-y-6 animate-fade-in">
       <div className="text-center max-w-lg mx-auto">
         <h2 className="font-heading text-2xl font-bold text-charcoal sm:text-3xl">
-          What is your skin type?
+          Welcome to GlowLedger
         </h2>
         <p className="mt-2 text-sm text-charcoal-light">
-          Choose the description that best matches how your bare skin feels a few hours after washing.
+          Let&apos;s start with who you are so we can personalize your skincare recommendations on this device.
         </p>
       </div>
 
-      {/* Grid of skin types */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 pt-2">
-        {SKIN_TYPES.map((type) => {
-          const isSelected = selectedType === type.id;
-          return (
-            <Card
-              key={type.id}
-              onClick={() => onChangeType(type.id)}
-              className={cn(
-                'cursor-pointer relative p-5 transition-all text-left flex flex-col justify-between hover:border-sage hover:shadow-md',
-                isSelected
-                  ? 'border-2 border-sage bg-sage/5 shadow-md ring-2 ring-sage/20'
-                  : 'border-border bg-card'
-              )}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-2xl">{type.icon}</span>
-                  {isSelected && (
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-sage text-white text-xs">
-                      ✓
-                    </span>
-                  )}
-                </div>
-                <h3 className="font-heading text-lg font-semibold text-charcoal">
-                  {type.title}
-                </h3>
-                <p className="mt-1 text-xs text-charcoal-light leading-relaxed">
-                  {type.description}
-                </p>
-              </div>
+      {/* Profile Basics: Name & Age at the Start */}
+      <Card className="max-w-2xl mx-auto p-5 sm:p-6 border-border bg-card shadow-card">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-2xl">👤</span>
+          <div>
+            <h3 className="font-heading text-base font-bold text-charcoal">
+              Your Personal Profile
+            </h3>
+            <p className="text-xs text-charcoal-light">
+              Personalizes your routines and consultations on this device
+            </p>
+          </div>
+        </div>
 
-              <div className="mt-4 pt-3 border-t border-border/50 flex flex-wrap gap-1.5">
-                {type.characteristics.map((char) => (
-                  <span
-                    key={char}
-                    className="inline-block rounded-md bg-cream px-2 py-0.5 text-[11px] text-charcoal-light"
-                  >
-                    {char}
-                  </span>
-                ))}
-              </div>
-            </Card>
-          );
-        })}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-xs font-semibold text-charcoal mb-1.5">
+              What should we call you? (Name or Nickname)
+            </label>
+            <Input
+              placeholder="e.g. Priya"
+              value={name}
+              onChange={(e) => onChangeName(e.target.value)}
+              className="h-11 text-sm bg-cream/30"
+              autoFocus
+            />
+            <p className="mt-1 text-[11px] text-charcoal-lighter">
+              Shown across your personalized routine verdicts on this device.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-charcoal mb-1.5">
+              What is your age bracket?
+            </label>
+            <select
+              value={ageRange}
+              onChange={(e) => onChangeAge(e.target.value)}
+              className="flex h-11 w-full rounded-xl border border-input bg-card px-3 py-2 text-xs text-charcoal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage"
+            >
+              {AGE_RANGES.map((ar) => (
+                <option key={ar.value} value={ar.value}>
+                  {ar.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-charcoal-lighter">
+              Age determines natural cell turnover rate and active tolerance.
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Skin Type Section */}
+      <div className="max-w-2xl mx-auto pt-2">
+        <div className="mb-3 text-center sm:text-left">
+          <h3 className="font-heading text-lg font-bold text-charcoal">
+            What is your primary skin type?
+          </h3>
+          <p className="text-xs text-charcoal-light">
+            How your skin feels a few hours after cleansing without moisturizer
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {SKIN_TYPES.map((type) => {
+            const isSelected = selectedType === type.id;
+            return (
+              <Card
+                key={type.id}
+                onClick={() => onChangeType(type.id)}
+                className={cn(
+                  'cursor-pointer relative p-4 transition-all text-left flex flex-col justify-between hover:border-sage hover:shadow-md',
+                  isSelected
+                    ? 'border-2 border-sage bg-sage/5 shadow-md ring-2 ring-sage/20'
+                    : 'border-border bg-card'
+                )}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-2xl">{type.icon}</span>
+                    {isSelected && (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-sage text-white text-xs font-bold">
+                        ✓
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="font-heading text-base font-semibold text-charcoal">
+                    {type.title}
+                  </h4>
+                  <p className="mt-1 text-xs text-charcoal-light leading-relaxed">
+                    {type.description}
+                  </p>
+                </div>
+
+                <div className="mt-3 pt-2.5 border-t border-border/50 flex flex-wrap gap-1">
+                  {type.characteristics.map((char) => (
+                    <span
+                      key={char}
+                      className="inline-block rounded-md bg-cream px-1.5 py-0.5 text-[10px] text-charcoal-light font-medium"
+                    >
+                      {char}
+                    </span>
+                  ))}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
       </div>
 
       {/* Optional Free-text notes */}
-      <div className="max-w-xl mx-auto pt-4">
+      <div className="max-w-2xl mx-auto pt-2">
         <label className="block text-xs font-medium text-charcoal mb-1.5">
-          Tell us more in your own words (optional)
+          Tell us more about your skin in your own words (optional)
         </label>
         <Textarea
-          placeholder="e.g. My skin gets extremely flaky during winter, or I get hormonal breakouts around my jawline..."
+          placeholder="e.g. My cheeks get red after hot showers, or I experience stubborn oiliness around my nose..."
           value={notes}
           onChange={(e) => onChangeNotes(e.target.value)}
-          className="text-sm"
+          className="text-xs sm:text-sm bg-cream/20"
+          rows={3}
         />
         <p className="mt-1 text-[11px] text-charcoal-lighter">
-          Any nuance helps our AI tailor product suitability notes.
+          Any specifics help our AI intelligence engine fine-tune your routine analysis.
         </p>
       </div>
     </div>

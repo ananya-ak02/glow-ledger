@@ -15,7 +15,7 @@ import { StepHistory } from './step-history';
 import { StepContext } from './step-context';
 
 const STEPS = [
-  { id: 'skin_type', title: 'Skin Type', subtitle: 'Barrier & Texture' },
+  { id: 'skin_type', title: 'Profile & Skin Basics', subtitle: 'Name, Age & Barrier' },
   { id: 'concerns', title: 'Concerns', subtitle: 'Targeted Goals' },
   { id: 'routine', title: 'Current Routine', subtitle: 'AM & PM Products' },
   { id: 'history', title: 'History & Triggers', subtitle: 'Safe Staples & Reactions' },
@@ -37,8 +37,17 @@ export function OnboardingWizard() {
       const saved =
         localStorage.getItem('glowledger_user_profile') ||
         localStorage.getItem(LOCAL_STORAGE_KEY);
+      const savedName = localStorage.getItem('glowledger_user_name') || '';
+
       if (saved) {
-        setState((prev) => ({ ...prev, ...JSON.parse(saved) }));
+        const parsed = JSON.parse(saved);
+        setState((prev) => ({
+          ...prev,
+          ...parsed,
+          name: parsed.name || savedName || prev.name,
+        }));
+      } else if (savedName) {
+        setState((prev) => ({ ...prev, name: savedName }));
       }
 
       if (typeof window !== 'undefined') {
@@ -64,6 +73,9 @@ export function OnboardingWizard() {
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
         localStorage.setItem('glowledger_user_profile', JSON.stringify(state));
+        if (state.name) {
+          localStorage.setItem('glowledger_user_name', state.name);
+        }
       } catch {
         // Storage quota issues or private mode
       }
@@ -107,6 +119,9 @@ export function OnboardingWizard() {
       // Save user profile permanently in localStorage so user's entered routine is NEVER erased
       localStorage.setItem('glowledger_user_profile', JSON.stringify(state));
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+      if (state.name) {
+        localStorage.setItem('glowledger_user_name', state.name);
+      }
       // Mark onboarding completed in session
       localStorage.setItem('glowledger_onboarding_completed', 'true');
 
@@ -157,8 +172,17 @@ export function OnboardingWizard() {
       <div className="min-h-[460px] pb-10">
         {currentStep === 0 && (
           <StepSkinType
+            name={state.name || ''}
+            ageRange={state.age_range || '20-29'}
             selectedType={state.skin_type}
             notes={state.skin_type_notes}
+            onChangeName={(name) => {
+              setState((prev) => ({ ...prev, name }));
+              try {
+                localStorage.setItem('glowledger_user_name', name);
+              } catch {}
+            }}
+            onChangeAge={(age) => setState((prev) => ({ ...prev, age_range: age }))}
             onChangeType={(type) => setState((prev) => ({ ...prev, skin_type: type }))}
             onChangeNotes={(notes) => setState((prev) => ({ ...prev, skin_type_notes: notes }))}
           />

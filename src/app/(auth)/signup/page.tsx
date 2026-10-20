@@ -3,20 +3,23 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [consentChecked, setConsentChecked] = useState(true);
 
-  async function handleEmailSignup(e: React.FormEvent) {
+  const hasCloudAuth = isSupabaseConfigured();
+
+  async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     if (!consentChecked) {
       setErrorMsg('Please review and acknowledge the disclaimer to continue.');
@@ -26,29 +29,50 @@ export default function SignupPage() {
     setLoading(true);
     setErrorMsg(null);
 
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+    const displayName = name.trim() || email.split('@')[0] || 'Friend';
 
-      if (error) {
-        setErrorMsg(error.message);
-      } else if (data?.user) {
-        // Successful signup, redirect to onboarding wizard
-        router.push('/onboarding');
+    try {
+      if (hasCloudAuth) {
+        const supabase = createClient();
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { display_name: displayName },
+          },
+        });
+
+        if (error) {
+          setErrorMsg(error.message);
+          setLoading(false);
+          return;
+        }
       }
+
+      // Save user session & name for this device
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('glowledger_demo_user', email);
+        localStorage.setItem('glowledger_user_name', displayName);
+      }
+
+      router.push('/onboarding');
     } catch {
-      setErrorMsg('Authentication service unavailable. You can use the Demo mode below to start immediately!');
+      // Local device fallback
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('glowledger_demo_user', email);
+        localStorage.setItem('glowledger_user_name', displayName);
+      }
+      router.push('/onboarding');
     } finally {
       setLoading(false);
     }
   }
 
-  function handleDemoSignup() {
+  function handleInstantGuestStart() {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('glowledger_demo_user', 'newuser@glowledger.app');
+      const displayName = name.trim() || 'Skincare Friend';
+      localStorage.setItem('glowledger_user_name', displayName);
+      localStorage.setItem('glowledger_demo_user', 'guest@glowledger.app');
     }
     router.push('/onboarding');
   }
@@ -79,18 +103,20 @@ export default function SignupPage() {
             </span>
           </Link>
           <h1 className="font-heading text-3xl font-bold text-charcoal">
-            Let&apos;s understand your skin
+            Start your skin profile
           </h1>
           <p className="mt-1.5 text-sm text-charcoal-light">
-            Create your free profile to start personalized analysis
+            Understand your routine, conflict rules, and ingredient fits
           </p>
         </div>
 
         <Card className="shadow-lg border-border bg-card">
           <CardHeader>
-            <CardTitle>Create Skin Profile</CardTitle>
+            <CardTitle>Create Profile</CardTitle>
             <CardDescription>
-              Sign up to save your skin concerns, routine, and research reports
+              {hasCloudAuth
+                ? 'Create a cloud account to sync routines across your phone & laptop'
+                : 'Enter your details to personalize your routine on this device'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -100,9 +126,23 @@ export default function SignupPage() {
               </div>
             )}
 
-            <form onSubmit={handleEmailSignup} className="space-y-4">
+            <form onSubmit={handleSignup} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-charcoal mb-1.5">
+                <label className="block text-xs font-semibold text-charcoal mb-1.5">
+                  What is your name?
+                </label>
+                <Input
+                  type="text"
+                  required
+                  placeholder="e.g. Priya"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-charcoal mb-1.5">
                   Email address
                 </label>
                 <Input
@@ -115,61 +155,64 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-charcoal mb-1.5">
-                  Choose a password
+                <label className="block text-xs font-semibold text-charcoal mb-1.5">
+                  Password
                 </label>
                 <Input
                   type="password"
                   required
-                  minLength={6}
-                  placeholder="At least 6 characters"
+                  placeholder="Create a password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
 
-              {/* Consent & Privacy Notice */}
-              <div className="rounded-xl bg-cream-dark/60 p-3.5 border border-border/80">
-                <label className="flex items-start gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={consentChecked}
-                    onChange={(e) => setConsentChecked(e.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-border text-sage focus:ring-sage"
-                  />
-                  <span className="text-xs text-charcoal-light leading-relaxed">
-                    I understand GlowLedger provides educational insights, <strong>not medical advice</strong>.
-                    Free-tier AI APIs never receive personal identifiers (names, photos, emails).
-                  </span>
+              <div className="flex items-start gap-2.5 pt-1">
+                <input
+                  type="checkbox"
+                  id="consent"
+                  checked={consentChecked}
+                  onChange={(e) => setConsentChecked(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-border text-sage focus:ring-sage"
+                />
+                <label htmlFor="consent" className="text-xs text-charcoal-light leading-relaxed">
+                  I understand GlowLedger provides informational analysis, not medical advice. Always patch test new products.
                 </label>
               </div>
 
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 rounded-xl bg-sage hover:bg-sage-dark text-white font-medium shadow-sm transition-all"
+                className="w-full h-11 rounded-xl bg-sage hover:bg-sage-dark text-white font-medium shadow-sm transition-all text-xs"
               >
-                {loading ? 'Creating Profile...' : 'Begin Skin Onboarding'}
+                {loading ? 'Setting up Profile...' : 'Create Profile & Start Onboarding →'}
               </Button>
             </form>
 
-            {/* Instant Demo Sandbox Access */}
-            <div className="mt-4 pt-4 border-t border-border/60 text-center">
-              <button
-                type="button"
-                onClick={handleDemoSignup}
-                className="w-full rounded-xl bg-cream-dark px-4 py-2.5 text-xs font-semibold text-charcoal hover:bg-blush-light transition-colors flex items-center justify-center gap-1.5"
-              >
-                <span>🌿</span>
-                <span>Continue without sign-up (Instant Demo Mode)</span>
-              </button>
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-3 text-charcoal-lighter font-medium">Or</span>
+              </div>
             </div>
+
+            {/* Instant Guest Start without password */}
+            <button
+              type="button"
+              onClick={handleInstantGuestStart}
+              className="w-full rounded-xl bg-cream-dark px-4 py-2.5 text-xs font-semibold text-charcoal hover:bg-blush-light transition-colors flex items-center justify-center gap-1.5"
+            >
+              <span>⚡</span>
+              <span>Start Instantly on this Device (No Password)</span>
+            </button>
           </CardContent>
 
           <CardFooter className="justify-center border-t border-border text-xs text-charcoal-light">
-            Already have an account?{' '}
+            Already have a profile?{' '}
             <Link href="/login" className="ml-1 font-semibold text-terracotta hover:underline">
-              Sign in
+              Log in
             </Link>
           </CardFooter>
         </Card>

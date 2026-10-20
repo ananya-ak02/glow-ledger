@@ -9,9 +9,26 @@ import { createClient } from '@/lib/supabase/client';
 export function Navbar() {
   const pathname = usePathname();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check local session or demo user
+    // 1. Check local device profile name
+    if (typeof window !== 'undefined') {
+      const savedName = localStorage.getItem('glowledger_user_name');
+      if (savedName) {
+        setUserName(savedName);
+      } else {
+        const savedProfile = localStorage.getItem('glowledger_user_profile');
+        if (savedProfile) {
+          try {
+            const p = JSON.parse(savedProfile);
+            if (p?.name) setUserName(p.name);
+          } catch {}
+        }
+      }
+    }
+
+    // 2. Check local session or demo user
     const demoUser = typeof window !== 'undefined' ? localStorage.getItem('glowledger_demo_user') : null;
     if (demoUser) {
       setUserEmail(demoUser);
@@ -81,21 +98,24 @@ export function Navbar() {
 
         {/* Right Auth / Profile Button */}
         <div className="flex items-center gap-3">
-          {userEmail ? (
-            <div className="flex items-center gap-3">
+          {userName || userEmail ? (
+            <div className="flex items-center gap-2.5">
               <Link
                 href="/profile"
                 className="flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-medium text-charcoal shadow-sm hover:bg-cream-dark transition-colors"
               >
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-sage-light text-[10px] text-charcoal font-bold">
-                  {userEmail.charAt(0).toUpperCase()}
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-sage text-[10px] text-white font-bold">
+                  {(userName || userEmail || 'U').charAt(0).toUpperCase()}
                 </span>
-                <span className="hidden sm:inline max-w-[120px] truncate">{userEmail}</span>
+                <span className="max-w-[130px] truncate font-semibold">
+                  {userName ? `👋 Hi, ${userName}` : userEmail}
+                </span>
               </Link>
               <button
                 onClick={() => {
                   if (typeof window !== 'undefined') {
                     localStorage.removeItem('glowledger_demo_user');
+                    localStorage.removeItem('glowledger_user_name');
                   }
                   const supabase = createClient();
                   supabase.auth.signOut().finally(() => {
@@ -103,6 +123,7 @@ export function Navbar() {
                   });
                 }}
                 className="text-xs text-charcoal-lighter hover:text-charcoal transition-colors px-2 py-1"
+                title="Log out from this device"
               >
                 Log out
               </button>

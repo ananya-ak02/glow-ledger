@@ -29,6 +29,7 @@ export function ResearchPageView() {
           .then((data) => {
             if (data?.profile) {
               setProfileState({
+                name: (data.profile as any)?.name || (typeof window !== 'undefined' ? localStorage.getItem('glowledger_user_name') || '' : ''),
                 skin_type: data.profile.skin_type,
                 skin_type_notes: data.profile.skin_type_notes || '',
                 concerns: data.concerns || [],

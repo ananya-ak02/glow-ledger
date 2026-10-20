@@ -41,13 +41,18 @@ export function RoutineAnalyzerView() {
 
       if (saved) {
         const parsed = JSON.parse(saved);
+        const savedName = localStorage.getItem('glowledger_user_name') || '';
         const hasUserData =
           (parsed.am_routine && parsed.am_routine.length > 0) ||
           (parsed.pm_routine && parsed.pm_routine.length > 0) ||
           Boolean(parsed.skin_type);
 
         if (hasUserData) {
-          stateToUse = { ...INITIAL_ONBOARDING_STATE, ...parsed };
+          stateToUse = {
+            ...INITIAL_ONBOARDING_STATE,
+            ...parsed,
+            name: parsed.name || savedName || '',
+          };
         }
       }
     } catch {
@@ -65,6 +70,7 @@ export function RoutineAnalyzerView() {
         .then((data) => {
           if (data?.profile) {
             const loaded: OnboardingState = {
+              name: (data.profile as any)?.name || (typeof window !== 'undefined' ? localStorage.getItem('glowledger_user_name') || '' : ''),
               skin_type: data.profile.skin_type,
               skin_type_notes: data.profile.skin_type_notes || '',
               concerns: data.concerns || [],
@@ -165,10 +171,10 @@ export function RoutineAnalyzerView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-heading text-3xl font-bold text-charcoal sm:text-4xl">
-            Routine Analyzer
+            {profileState?.name ? `${profileState.name}'s Routine Analyzer` : 'Routine Analyzer'}
           </h1>
           <p className="mt-1 text-sm text-charcoal-light">
-            AI-powered dermatological review of your active products, chemical conflicts, and layering order.
+            AI-powered dermatological review of {profileState?.name ? `${profileState.name}'s` : 'your'} active products, chemical conflicts, and layering order.
           </p>
         </div>
 
@@ -228,9 +234,15 @@ export function RoutineAnalyzerView() {
               <span className="text-2xl">✨</span>
               <div>
                 <h2 className="font-heading text-lg font-bold text-charcoal">
-                  Your Current Skincare Routine
+                  {profileState?.name ? `${profileState.name}'s Current Skincare Routine` : 'Your Current Skincare Routine'}
                 </h2>
                 <p className="text-xs text-charcoal-light">
+                  {profileState.name && (
+                    <strong className="text-terracotta">{profileState.name} · </strong>
+                  )}
+                  {profileState.age_range && (
+                    <span className="font-medium text-charcoal">{profileState.age_range} · </span>
+                  )}
                   {profileState.skin_type ? (
                     <span className="capitalize font-medium text-charcoal">
                       {profileState.skin_type} skin

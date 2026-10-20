@@ -8,26 +8,37 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { type OnboardingState, INITIAL_ONBOARDING_STATE } from '@/types/onboarding';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 
 export default function ProfilePage() {
   const router = useRouter();
   const [profileData, setProfileData] = useState<OnboardingState>(INITIAL_ONBOARDING_STATE);
+  const [userName, setUserName] = useState<string>('');
+  const [supabaseActive, setSupabaseActive] = useState<boolean>(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
+    setSupabaseActive(isSupabaseConfigured());
+
     // Check local storage draft or session
     try {
+      const savedName = localStorage.getItem('glowledger_user_name') || '';
+      if (savedName) setUserName(savedName);
+
       const saved =
         localStorage.getItem('glowledger_user_profile') ||
         localStorage.getItem('glowledger_onboarding_draft_v1');
       if (saved) {
-        setProfileData(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setProfileData(parsed);
+        if (parsed.name) setUserName(parsed.name);
       } else {
         fetch('/api/profile')
           .then((res) => (res.ok ? res.json() : null))
           .then((data) => {
             if (data?.profile) {
               setProfileData({
+                name: (data.profile as any)?.name || savedName,
                 skin_type: data.profile.skin_type,
                 skin_type_notes: data.profile.skin_type_notes || '',
                 concerns: data.concerns || [],
@@ -58,6 +69,7 @@ export default function ProfilePage() {
       localStorage.removeItem('glowledger_onboarding_draft_v1');
       localStorage.removeItem('glowledger_onboarding_completed');
       localStorage.removeItem('glowledger_demo_user');
+      localStorage.removeItem('glowledger_user_name');
     }
     router.push('/');
   }
@@ -70,11 +82,17 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-xl">🌿</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-sage-dark bg-sage/15 px-2.5 py-0.5 rounded-full border border-sage/30">
+                {supabaseActive ? 'Cloud Sync Enabled' : 'Device Storage Active'}
+              </span>
+            </div>
             <h1 className="font-heading text-3xl font-bold text-charcoal">
-              My Skin Profile
+              {userName ? `${userName}'s Skin Profile` : 'My Skin Profile'}
             </h1>
             <p className="mt-1 text-sm text-charcoal-light">
-              Your personalized skin intelligence parameters and safety limits
+              {userName ? `Welcome back, ${userName}! ` : ''}Your personalized skin intelligence parameters and safety limits
             </p>
           </div>
 
@@ -242,6 +260,64 @@ export default function ProfilePage() {
             </div>
           </Card>
         </div>
+
+        {/* Card 5: Device Memory vs. Supabase Cloud Sync */}
+        <Card className="mt-8 p-6 border-sage/40 bg-gradient-to-br from-card via-card to-cream/40 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sage/20 text-xl">
+                💾
+              </div>
+              <div>
+                <h3 className="font-heading text-base font-bold text-charcoal">
+                  Routine Memory & Storage Status
+                </h3>
+                <p className="text-xs text-charcoal-light">
+                  How GlowLedger remembers your custom routine and when you might want Supabase
+                </p>
+              </div>
+            </div>
+
+            <Badge
+              variant={supabaseActive ? 'good' : 'secondary'}
+              className="self-start sm:self-auto text-xs py-1 px-3"
+            >
+              {supabaseActive
+                ? '🟢 Supabase Cloud Sync Active'
+                : '📱 Local Device Storage Active'}
+            </Badge>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 text-xs leading-relaxed">
+            <div className="rounded-xl border border-border bg-white p-4 space-y-2">
+              <span className="font-bold text-charcoal flex items-center gap-1.5">
+                <span>📱</span> On This Device (Current Mode)
+              </span>
+              <p className="text-charcoal-light">
+                Your skincare routine, profile, name, and age are saved securely in your browser&apos;s local storage.
+              </p>
+              <ul className="list-disc pl-4 text-charcoal-lighter space-y-1">
+                <li>Instantly accessible every time you open GlowLedger.</li>
+                <li>Zero database setup required — works out of the box.</li>
+                <li>100% private to this browser and device.</li>
+              </ul>
+            </div>
+
+            <div className="rounded-xl border border-border bg-white p-4 space-y-2">
+              <span className="font-bold text-charcoal flex items-center gap-1.5">
+                <span>☁️</span> Supabase Cloud Sync (Optional)
+              </span>
+              <p className="text-charcoal-light">
+                Want to access your routine from your phone, laptop, and tablet simultaneously? That&apos;s when Supabase comes in.
+              </p>
+              <ul className="list-disc pl-4 text-charcoal-lighter space-y-1">
+                <li>Free tier offers 500MB storage and 50,000 monthly active users.</li>
+                <li>Create a free account at <strong>supabase.com</strong>.</li>
+                <li>Add your <code className="bg-cream px-1 rounded text-[10px]">NEXT_PUBLIC_SUPABASE_URL</code> &amp; anon key to <code className="bg-cream px-1 rounded text-[10px]">.env.local</code>.</li>
+              </ul>
+            </div>
+          </div>
+        </Card>
 
         {/* Privacy & Delete Data Section */}
         <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">

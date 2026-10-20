@@ -25,7 +25,7 @@ interface StepContextProps {
   onChangeConsent: (consent: boolean) => void;
 }
 
-const AGE_RANGES = ['Under 18', '18-24', '25-34', '35-44', '45-54', '55+'];
+const AGE_RANGES = ['Under 20', '20-29', '30-39', '40-49', '50+'];
 const CLIMATES = [
   { id: 'temperate', label: 'Temperate / Moderate', desc: 'Mild seasons with balanced humidity' },
   { id: 'humid', label: 'Hot & Humid', desc: 'High moisture; skin tends to produce excess oil' },
@@ -138,22 +138,27 @@ export function StepContext({
 
         {/* Climate & Age Bracket */}
         <Card className="p-6 border-border bg-card space-y-5">
-          {/* Age selection */}
-          <div>
-            <label className="block text-xs font-semibold text-charcoal mb-2">
-              Age Range
-            </label>
-            <div className="flex flex-wrap gap-2">
+          {/* Age selection - configured in Step 1 */}
+          <div className="rounded-xl bg-cream/50 border border-border/80 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span className="text-xs font-semibold text-charcoal block">
+                Age Bracket (Set in Step 1)
+              </span>
+              <span className="text-[11px] text-charcoal-light">
+                Selected: <strong className="text-terracotta">{ageRange || '20-29'}</strong>
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
               {AGE_RANGES.map((age) => (
                 <button
                   key={age}
                   type="button"
                   onClick={() => onChangeAge(age)}
                   className={cn(
-                    'rounded-xl px-4 py-2 text-xs font-medium transition-all',
+                    'rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all',
                     ageRange === age
-                      ? 'bg-sage text-white shadow-sm font-semibold'
-                      : 'bg-cream text-charcoal-light hover:bg-cream-dark'
+                      ? 'bg-sage text-white font-semibold shadow-xs'
+                      : 'bg-white text-charcoal-light border border-border/60 hover:bg-cream-dark'
                   )}
                 >
                   {age}
