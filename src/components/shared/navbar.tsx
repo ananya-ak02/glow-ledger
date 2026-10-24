@@ -50,7 +50,7 @@ export function Navbar() {
     { href: '/routine', label: 'Routine' },
     { href: '/routine/builder', label: 'Builder' },
     { href: '/reactions', label: 'Reaction Log' },
-    { href: '/wishlist', label: 'Wishlist & Compare' },
+    { href: '/wishlist', label: 'Compare & Wishlist' },
   ];
 
   return (

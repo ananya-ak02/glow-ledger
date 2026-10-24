@@ -19,10 +19,30 @@ export function getLocalWishlist(): WishlistItemStored[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(WISHLIST_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const list: WishlistItemStored[] = JSON.parse(raw);
+
+    // Clean out old hardcoded demo items (unprompted seeded items)
+    const isSeededDemo = (w: WishlistItemStored) =>
+      !w.synthesis &&
+      ((w.productName === 'Skin Perfecting 2% BHA Liquid Exfoliant' && w.brand === "Paula's Choice") ||
+        (w.productName === 'Moisturizing Cream' && w.brand === 'CeraVe'));
+
+    const realItems = list.filter((w) => !isSeededDemo(w));
+    if (realItems.length !== list.length) {
+      localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(realItems));
+    }
+    return realItems;
   } catch {
     return [];
   }
+}
+
+export function isProductInWishlist(productName: string): boolean {
+  const current = getLocalWishlist();
+  return current.some(
+    (i) => i.productName.toLowerCase() === productName.trim().toLowerCase()
+  );
 }
 
 export function saveLocalWishlist(items: WishlistItemStored[]): void {
@@ -68,7 +88,24 @@ export function compareCachedProducts(
   productA: WishlistItemStored,
   productB: WishlistItemStored
 ) {
+  const scoreMap = { good_fit: 3, use_with_caution: 2, avoid: 1 };
+  const scoreA = scoreMap[productA.verdict || 'good_fit'];
+  const scoreB = scoreMap[productB.verdict || 'good_fit'];
+
+  let winnerText = 'Both products are solid options. Choose based on your preferred texture and daily schedule.';
+  let winner: 'A' | 'B' | 'tie' = 'tie';
+
+  if (scoreA > scoreB) {
+    winner = 'A';
+    winnerText = `${productA.productName} is rated as a better fit for your current skin barrier and concerns.`;
+  } else if (scoreB > scoreA) {
+    winner = 'B';
+    winnerText = `${productB.productName} is rated as a better fit for your current skin barrier and concerns.`;
+  }
+
   return {
+    winner,
+    winnerText,
     productA: {
       name: productA.productName,
       brand: productA.brand || 'Brand',
@@ -79,6 +116,7 @@ export function compareCachedProducts(
       keyIngredients: productA.synthesis?.key_ingredients || [],
       sentiment: productA.synthesis?.review_summary?.overall_sentiment || 'positive',
       placement: productA.personalization?.routine_placement?.suggested_step || 'Treatment Step',
+      flags: productA.personalization?.flags || [],
     },
     productB: {
       name: productB.productName,
@@ -90,6 +128,7 @@ export function compareCachedProducts(
       keyIngredients: productB.synthesis?.key_ingredients || [],
       sentiment: productB.synthesis?.review_summary?.overall_sentiment || 'positive',
       placement: productB.personalization?.routine_placement?.suggested_step || 'Treatment Step',
+      flags: productB.personalization?.flags || [],
     },
   };
 }

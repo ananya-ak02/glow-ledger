@@ -1,5 +1,11 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { addToWishlist, isProductInWishlist } from '@/lib/wishlist/storage';
 import type { ProductSynthesis, Personalization } from '@/types/ai';
 import type { IngredientConflict, VerdictFlag, Verdict } from '@/types/database';
 
@@ -23,6 +29,24 @@ export function VerdictCard({
   ingredientsList,
 }: VerdictCardProps) {
   const verdict = personalization.verdict;
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    setIsSaved(isProductInWishlist(synthesis.product_name));
+  }, [synthesis.product_name]);
+
+  function handleSaveWishlist() {
+    addToWishlist({
+      productName: synthesis.product_name,
+      brand: synthesis.brand || 'Skincare',
+      category: synthesis.best_for?.[0] || 'Treatment',
+      verdict: personalization.verdict,
+      synthesis,
+      personalization,
+      sourceLinks,
+    });
+    setIsSaved(true);
+  }
 
   const verdictStyles: Record<
     Verdict,
@@ -121,6 +145,35 @@ export function VerdictCard({
           )}
         </div>
       </Card>
+
+      {/* ─── Action Bar: Wishlist & Direct Comparison ─────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-border shadow-xs">
+        <div className="text-xs text-charcoal-light">
+          Compare or save this evaluation for your routine:
+        </div>
+        <div className="flex items-center gap-2.5">
+          <Button
+            type="button"
+            onClick={handleSaveWishlist}
+            variant="outline"
+            className={`rounded-full text-xs font-semibold px-4 py-2 transition-all ${
+              isSaved
+                ? 'bg-sage/15 border-sage text-sage-dark font-bold'
+                : 'border-border hover:bg-cream text-charcoal'
+            }`}
+          >
+            {isSaved ? '✓ Saved in Wishlist' : '🔖 Save to Wishlist'}
+          </Button>
+
+          <Link
+            href={`/wishlist?compareA=${encodeURIComponent(synthesis.product_name)}`}
+            className="rounded-full bg-sage hover:bg-sage-dark text-white px-4 py-2 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all"
+          >
+            <span>⚖️</span>
+            <span>Compare with Another Product</span>
+          </Link>
+        </div>
+      </div>
 
       {/* ─── Routine Placement & Introduction Plan ────────────────── */}
       {personalization.routine_placement && (

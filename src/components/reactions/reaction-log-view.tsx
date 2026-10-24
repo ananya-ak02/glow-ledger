@@ -29,46 +29,58 @@ export function ReactionLogView() {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    // Load from local storage or mock initial state
+    // Load from local storage or user profile - strictly NO mock demo reactions
     try {
       const saved = localStorage.getItem('glowledger_reactions_v1');
+      let loadedReactions: UserReaction[] = [];
+
+      const isDemoReaction = (r: UserReaction) =>
+        r.id === 'r1' ||
+        r.id === 'r2' ||
+        r.product_name === 'High Potency Niacinamide Serum' ||
+        r.product_name === 'Brightening Niacinamide Gel Cream';
+
       if (saved) {
         const parsed: UserReaction[] = JSON.parse(saved);
-        setReactions(parsed);
-        setDetectedTriggers(detectRepeatedTriggers(parsed));
-      } else {
-        // Initial sample reactions demonstrating auto-detection
-        const demoReactions: UserReaction[] = [
-          {
-            id: 'r1',
-            profile_id: 'demo',
-            product_name: 'High Potency Niacinamide Serum',
-            product_id: null,
-            reaction_type: 'burning',
-            severity: 'moderate',
-            suspected_ingredients: ['Niacinamide'],
-            notes: 'Felt severe flushing and heat on cheeks',
-            occurred_at: '2026-02-15',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 'r2',
-            profile_id: 'demo',
-            product_name: 'Brightening Niacinamide Gel Cream',
-            product_id: null,
-            reaction_type: 'irritation',
-            severity: 'mild',
-            suspected_ingredients: ['Niacinamide', 'Fragrance'],
-            notes: 'Tiny red stinging bumps after 2 days',
-            occurred_at: '2026-03-10',
-            created_at: new Date().toISOString(),
-          },
-        ];
-        setReactions(demoReactions);
-        setDetectedTriggers(detectRepeatedTriggers(demoReactions));
+        // Clean out any previously stored mock demo data
+        loadedReactions = parsed.filter((r) => !isDemoReaction(r));
       }
+
+      // If no stored reactions, check if user entered past reactions in onboarding
+      if (loadedReactions.length === 0) {
+        const profileStr =
+          localStorage.getItem('glowledger_user_profile') ||
+          localStorage.getItem('glowledger_onboarding_draft_v1');
+        if (profileStr) {
+          try {
+            const profile = JSON.parse(profileStr);
+            if (profile.past_reactions && Array.isArray(profile.past_reactions)) {
+              loadedReactions = profile.past_reactions
+                .filter((pr: { product_name: string }) => Boolean(pr.product_name))
+                .map((pr: { id?: string; product_name: string; reaction_type?: ReactionType; severity?: Severity; suspected_ingredients?: string[]; notes?: string }) => ({
+                  id: pr.id || Math.random().toString(36).substring(2, 9),
+                  profile_id: 'local_user',
+                  product_name: pr.product_name,
+                  product_id: null,
+                  reaction_type: pr.reaction_type || 'irritation',
+                  severity: pr.severity || 'moderate',
+                  suspected_ingredients: pr.suspected_ingredients || [],
+                  notes: pr.notes || null,
+                  occurred_at: new Date().toISOString().split('T')[0],
+                  created_at: new Date().toISOString(),
+                }));
+            }
+          } catch {}
+        }
+      }
+
+      // Persist the clean list back
+      localStorage.setItem('glowledger_reactions_v1', JSON.stringify(loadedReactions));
+      setReactions(loadedReactions);
+      setDetectedTriggers(detectRepeatedTriggers(loadedReactions));
     } catch {
-      // Fallback
+      setReactions([]);
+      setDetectedTriggers([]);
     }
   }, []);
 
@@ -96,6 +108,23 @@ export function ReactionLogView() {
     setDetectedTriggers(detectRepeatedTriggers(updated));
     localStorage.setItem('glowledger_reactions_v1', JSON.stringify(updated));
 
+    // Sync with user profile
+    try {
+      const profileStr = localStorage.getItem('glowledger_user_profile');
+      if (profileStr) {
+        const p = JSON.parse(profileStr);
+        p.past_reactions = updated.map((r) => ({
+          id: r.id,
+          product_name: r.product_name,
+          reaction_type: r.reaction_type,
+          severity: r.severity,
+          suspected_ingredients: r.suspected_ingredients,
+          notes: r.notes || undefined,
+        }));
+        localStorage.setItem('glowledger_user_profile', JSON.stringify(p));
+      }
+    } catch {}
+
     // Reset inputs
     setProductName('');
     setSuspectedIngredient('');
@@ -107,6 +136,23 @@ export function ReactionLogView() {
     setReactions(updated);
     setDetectedTriggers(detectRepeatedTriggers(updated));
     localStorage.setItem('glowledger_reactions_v1', JSON.stringify(updated));
+
+    // Sync with user profile
+    try {
+      const profileStr = localStorage.getItem('glowledger_user_profile');
+      if (profileStr) {
+        const p = JSON.parse(profileStr);
+        p.past_reactions = updated.map((r) => ({
+          id: r.id,
+          product_name: r.product_name,
+          reaction_type: r.reaction_type,
+          severity: r.severity,
+          suspected_ingredients: r.suspected_ingredients,
+          notes: r.notes || undefined,
+        }));
+        localStorage.setItem('glowledger_user_profile', JSON.stringify(p));
+      }
+    } catch {}
   }
 
   return (
@@ -285,10 +331,13 @@ export function ReactionLogView() {
           </div>
 
           {reactions.length === 0 ? (
-            <div className="text-center py-12 rounded-2xl border border-dashed border-border bg-card/60 p-6">
-              <span className="text-3xl">🌿</span>
-              <p className="mt-2 text-xs text-charcoal-light">
-                No negative reactions logged yet.
+            <div className="text-center py-12 rounded-2xl border border-dashed border-border bg-card/60 p-8 space-y-2">
+              <span className="text-3xl block">🌿</span>
+              <h4 className="font-heading text-sm font-bold text-charcoal">
+                No Negative Reactions Logged Yet
+              </h4>
+              <p className="text-xs text-charcoal-light max-w-sm mx-auto leading-relaxed">
+                If a product ever causes stinging, burning, breakouts, or redness, log it using the form on the left. GlowLedger will track recurring ingredients and automatically flag them across all future research verdicts.
               </p>
             </div>
           ) : (
